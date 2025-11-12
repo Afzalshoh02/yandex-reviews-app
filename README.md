@@ -1,8 +1,6 @@
 # Yandex Reviews Dashboard  
 **Отслеживание и анализ отзывов с Яндекс Карт в реальном времени**
 
-![Dashboard Preview](https://via.placeholder.com/1200x600/6366f1/ffffff?text=Yandex+Reviews+Dashboard)
-
 ---
 
 ## О проекте
