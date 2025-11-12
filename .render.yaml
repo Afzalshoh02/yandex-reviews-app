@@ -1,15 +1,14 @@
 services:
   - type: web
-    name: laravel-vue-docker
+    name: yandex-reviews-app
     env: docker
     plan: free
-    autoDeploy: true
-    buildCommand: ""
-    startCommand: ""
+    docker:
+      dockerfile: Dockerfile.render
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: false
-      - key: APP_KEY
-        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr

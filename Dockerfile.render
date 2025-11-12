@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
 # Устанавливаем зависимости
 RUN apt-get update && apt-get install -y \
@@ -18,11 +18,17 @@ RUN npm install && npm run build
 
 # Права на storage и bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
-RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Production оптимизация
 RUN php artisan config:cache
 RUN php artisan route:cache
 RUN php artisan view:cache
+
+# Создаем non-root пользователя для безопасности
+RUN useradd -r -u 1000 -g www-data appuser
+RUN chown -R appuser:www-data /var/www/html
+USER appuser
+
+EXPOSE 8000
 
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
