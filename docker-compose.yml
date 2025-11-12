@@ -4,7 +4,7 @@ services:
         container_name: laravel_app
         restart: unless-stopped
         environment:
-            APP_ENV: local
+            APP_ENV: production
             APP_DEBUG: true
             APP_KEY: base64:somekeyhere
             DB_CONNECTION: mysql
