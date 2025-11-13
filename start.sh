@@ -1,41 +1,52 @@
 #!/bin/bash
+set -e
 
-# Проверка существования build директории
-echo "Checking build directory..."
-if [ -d "/var/www/public/build" ]; then
-    echo "Build directory exists"
-    ls -la /var/www/public/build/
-    if [ -d "/var/www/public/build/assets" ]; then
-        echo "Assets directory exists"
-        ls -la /var/www/public/build/assets/
-    fi
+echo "=== Starting Application ==="
+echo "Current directory: $(pwd)"
+echo "Working directory: /var/www"
+
+# Переходим в правильную директорию
+cd /var/www
+
+echo "=== Checking database ==="
+echo "Database path: /var/www/database/database.sqlite"
+
+# Создание директории database если не существует
+mkdir -p /var/www/database
+
+# Создание базы данных если не существует
+if [ ! -f /var/www/database/database.sqlite ]; then
+    echo "Creating SQLite database..."
+    touch /var/www/database/database.sqlite
+    echo "SQLite database created at /var/www/database/database.sqlite"
 else
-    echo "Build directory does not exist - rebuilding assets"
-    npm run build
+    echo "SQLite database already exists"
 fi
 
-# Установка правильных прав
+# Проверяем права
+echo "=== Setting permissions ==="
 chown -R www-data:www-data /var/www
 chmod -R 755 /var/www/storage
 chmod -R 755 /var/www/bootstrap/cache
 
-# Создание симлинка для storage
+echo "=== Creating storage link ==="
 php artisan storage:link
 
-# Применение миграций
-echo "Running migrations..."
+echo "=== Database contents ==="
+ls -la /var/www/database/
+
+echo "=== Running migrations ==="
 php artisan migrate --force
 
-# Запуск сидов
-echo "Running seeders..."
+echo "=== Running seeders ==="
 php artisan db:seed --force
 
-# Очистка и пересоздание кэша
-echo "Caching configurations..."
+echo "=== Caching configurations ==="
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+echo "=== Application ready! ==="
+
 # Запуск supervisor
-echo "Starting supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

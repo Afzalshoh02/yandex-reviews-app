@@ -49,9 +49,6 @@ RUN composer install --no-dev --optimize-autoloader
 # Установка зависимостей Node.js и сборка Vue
 RUN npm install && npm run build
 
-# Создание базы данных SQLite
-RUN touch /var/www/database/database.sqlite
-
 # Кэширование конфигурации
 RUN php artisan config:cache \
     && php artisan route:cache \
@@ -65,10 +62,13 @@ set -e\n\
 \n\
 echo "Starting application..."\n\
 \n\
+# Переходим в рабочую директорию\n\
+cd /var/www\n\
+\n\
 # Создание базы данных если не существует\n\
 if [ ! -f /var/www/database/database.sqlite ]; then\n\
     touch /var/www/database/database.sqlite\n\
-    echo "SQLite database created"\n\
+    echo "SQLite database created at /var/www/database/database.sqlite"\n\
 fi\n\
 \n\
 # Установка правильных прав\n\
@@ -97,5 +97,9 @@ echo "Application is ready!"\n\
 # Запуск supervisor\n\
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n\
 ' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+
+# Копируем скрипт запуска
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 CMD ["/usr/local/bin/start.sh"]
