@@ -1,16 +1,11 @@
-FROM node:18 as frontend
-
-WORKDIR /app
-COPY package*.json ./
-COPY resources ./resources
-RUN npm install && npm run build
-
 FROM php:8.2-cli
 
 # Установка системных пакетов
 RUN apt-get update && apt-get install -y \
     nginx \
     sqlite3 \
+    nodejs \
+    npm \
     curl \
     git \
     unzip \
@@ -21,16 +16,16 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Рабочая директория
 WORKDIR /var/www
-
-# Копирование PHP файлов
 COPY . .
-COPY --from=frontend /app/public/build ./public/build
 
 # Установка прав
 RUN chmod -R 775 storage bootstrap/cache
 
 # Зависимости PHP
 RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Зависимости Node.js и сборка
+RUN npm install && npm run build
 
 # Создание базы данных
 RUN touch database/database.sqlite
