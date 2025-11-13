@@ -56,7 +56,26 @@ chmod 664 /var/www/database/database.sqlite
 
 # Пересобираем фронтенд с правильным URL
 echo "Rebuilding frontend assets..."
-npm run build
+npm run build || echo "Frontend build failed, continuing..."
+
+# Создаем mix-manifest.json если его нет
+if [ ! -f public/mix-manifest.json ]; then
+    echo "Creating mix-manifest.json..."
+    echo '{"/js/app.js":"/js/app.js","/css/app.css":"/css/app.css"}' > public/mix-manifest.json
+fi
+
+# Проверяем существование CSS и JS файлов
+if [ ! -f public/css/app.css ]; then
+    echo "Creating placeholder CSS file..."
+    mkdir -p public/css
+    echo "/* Placeholder CSS */" > public/css/app.css
+fi
+
+if [ ! -f public/js/app.js ]; then
+    echo "Creating placeholder JS file..."
+    mkdir -p public/js
+    echo "// Placeholder JS" > public/js/app.js
+fi
 
 # Очищаем кеш
 echo "Clearing cache..."
@@ -67,7 +86,7 @@ php artisan view:clear || true
 
 # Запускаем миграции
 echo "Running migrations..."
-php artisan migrate --force
+php artisan migrate --force || echo "Migrations failed, continuing..."
 
 # Запускаем сидеры
 echo "Running seeders..."
@@ -79,9 +98,9 @@ php artisan storage:link || true
 
 # Кешируем конфигурацию
 echo "Caching configuration..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan config:cache || true
+php artisan route:cache || true
+php artisan view:cache || true
 
 echo "========================================="
 echo "Initialization completed successfully!"

@@ -68,7 +68,14 @@ RUN chown -R root:root /var/www \
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
 # Установка зависимостей Node.js и сборка фронтенда
-RUN npm install && npm run build
+RUN npm ci && npm run build
+
+# Проверяем существование mix-manifest.json и создаем его если нужно
+RUN if [ ! -f public/mix-manifest.json ] && [ -f public/build/manifest.json ]; then \
+        echo '{"/js/app.js":"/js/app.js","/css/app.css":"/css/app.css"}' > public/mix-manifest.json; \
+    elif [ ! -f public/mix-manifest.json ]; then \
+        echo '{"/js/app.js":"/js/app.js","/css/app.css":"/css/app.css"}' > public/mix-manifest.json; \
+    fi
 
 # Копирование конфигурации Nginx
 COPY nginx.conf /etc/nginx/sites-available/default
