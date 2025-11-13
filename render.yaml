@@ -2,14 +2,34 @@ services:
   - type: web
     name: yandex-reviews-app
     env: docker
-    docker:
-      dockerfile: Dockerfile
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
+      - key: APP_NAME
+        value: YandexReviews
       - key: APP_ENV
         value: production
-      - key: APP_DEBUG
-        value: false
       - key: APP_KEY
         generateValue: true
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://yandex-reviews-app.onrender.com
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/database/database.sqlite
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
     healthCheckPath: /health
     autoDeploy: true
