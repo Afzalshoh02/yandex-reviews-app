@@ -49,23 +49,15 @@ RUN npm install && npm run build
 # Создание базы данных SQLite
 RUN touch /var/www/database/database.sqlite
 
-# Применение миграций и сидов
-RUN php artisan migrate --force \
-    && php artisan db:seed --force \
-    && php artisan config:cache \
+# Кэширование конфигурации (без миграций и сидов)
+RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
 
 EXPOSE 80
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Скрипт запуска, который выполнит миграции при старте контейнера
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
-RUN php artisan storage:link
-
-# Установка правильных прав
-RUN chmod -R 775 storage bootstrap/cache
-
-# Генерация ключа приложения если отсутствует
-RUN if [ -z "$(grep 'APP_KEY=' .env)" ]; then \
-        php artisan key:generate --force; \
-    fi
+CMD ["/usr/local/bin/start.sh"]
