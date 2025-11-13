@@ -1,28 +1,71 @@
 FROM php:8.2-fpm
 
-# Устанавливаем зависимости
+# Установка зависимостей
 RUN apt-get update && apt-get install -y \
-    git zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev \
-    nodejs npm \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    sqlite3 \
+    libsqlite3-dev \
+    nginx \
+    nodejs \
+    npm \
+    supervisor
 
-# Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Очистка кеша
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /var/www/html
-COPY . .
+# Установка PHP расширений
+RUN docker-php-ext-install pdo_sqlite mbstring exif pcntl bcmath gd sockets
 
-# Зависимости
+# Установка Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Создание директории приложения
+WORKDIR /var/www
+
+# Копирование файлов приложения
+COPY . /var/www
+
+# Копирование конфигурационных файлов
+COPY nginx.conf /etc/nginx/sites-available/default
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Установка прав
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage \
+    && chmod -R 755 /var/www/bootstrap/cache
+
+# Установка зависимостей PHP
 RUN composer install --no-dev --optimize-autoloader
+
+# Установка зависимостей Node.js и сборка Vue
 RUN npm install && npm run build
 
-# Права на storage и bootstrap/cache
+# Создание базы данных SQLite
+RUN touch /var/www/database/database.sqlite
+
+# Применение миграций и сидов
+RUN php artisan migrate --force \
+    && php artisan db:seed --force \
+    && php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+EXPOSE 80
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+RUN php artisan storage:link
+
+# Установка правильных прав
 RUN chmod -R 775 storage bootstrap/cache
-RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Production оптимизация
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
-
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Генерация ключа приложения если отсутствует
+RUN if [ -z "$(grep 'APP_KEY=' .env)" ]; then \
+        php artisan key:generate --force; \
+    fi

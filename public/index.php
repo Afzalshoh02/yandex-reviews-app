@@ -2,7 +2,13 @@
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
-
+if (isset($_GET['debug'])) {
+    header('Content-Type: text/plain');
+    echo "Laravel Debug\n";
+    echo "APP_ENV: " . ($_ENV['APP_ENV'] ?? 'NOT SET') . "\n";
+    echo "APP_DEBUG: " . ($_ENV['APP_DEBUG'] ?? 'NOT SET') . "\n";
+    exit;
+}
 define('LARAVEL_START', microtime(true));
 
 /*
