@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.2-fpm
 
 # Установка системных пакетов
 RUN apt-get update && apt-get install -y \
@@ -9,7 +9,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# PHP расширения
+RUN docker-php-ext-install pdo pdo_sqlite mbstring
 
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -18,33 +24,24 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 COPY . .
 
+# Копирование nginx конфига
+COPY nginx-fpm.conf /etc/nginx/sites-available/default
+
 # Установка прав
+RUN chown -R www-data:www-data /var/www
 RUN chmod -R 775 storage bootstrap/cache
 
-# Зависимости PHP
+# Зависимости
 RUN composer install --no-dev --optimize-autoloader --no-scripts
-
-# Зависимости Node.js и сборка Vue
 RUN npm install && npm run build
-
-# Проверка что ассеты собрались
-RUN echo "=== Checking built assets ===" && \
-    ls -la public/build/ && \
-    echo "=== Manifest content ===" && \
-    [ -f public/build/manifest.json ] && cat public/build/manifest.json || echo "No manifest file"
 
 # Создание базы данных
 RUN touch database/database.sqlite
 
-# Копирование nginx конфига
-COPY nginx.conf /etc/nginx/sites-available/default
-
 EXPOSE 80
 
-CMD sh -c "\
-    php artisan migrate --force && \
-    php artisan storage:link && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    nginx -g 'daemon off;'"
+# Запуск через скрипт
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]

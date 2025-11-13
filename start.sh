@@ -1,23 +1,27 @@
 #!/bin/bash
 set -e
 
-# Создание базы данных
-touch /var/www/database/database.sqlite
+echo "Starting application..."
 
-# Установка прав
-chown -R www-data:www-data /var/www
-chmod -R 775 storage bootstrap/cache
+# Переходим в директорию проекта
+cd /var/www
 
-# Запуск миграций и кэширования
+# Создаем базу данных если не существует
+if [ ! -f database/database.sqlite ]; then
+    touch database/database.sqlite
+    echo "Database created"
+fi
+
+# Запускаем миграции и сиды
 php artisan migrate --force
 php artisan db:seed --force
+php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan storage:link
 
-# Запуск PHP-FPM в фоне
+echo "Starting PHP-FPM..."
 php-fpm -D
 
-# Запуск Nginx на переднем плане
+echo "Starting Nginx..."
 nginx -g 'daemon off;'
