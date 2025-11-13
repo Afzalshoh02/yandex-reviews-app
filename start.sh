@@ -2,7 +2,7 @@
 set -e
 
 echo "========================================="
-echo "Starting Laravel Application on Render"
+echo "Initializing Laravel Application"
 echo "========================================="
 
 # Переходим в директорию проекта
@@ -27,10 +27,16 @@ if [ ! -f database/database.sqlite ]; then
     chmod 664 database/database.sqlite
 fi
 
+# Создаем необходимые директории
+mkdir -p /run/php
+mkdir -p /var/log/supervisor
+mkdir -p storage/framework/{cache/data,sessions,views}
+mkdir -p storage/logs
+
 # Устанавливаем права
 echo "Setting permissions..."
-chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/database
-chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+chmod -R 755 /var/www
+chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/database
 chmod 664 /var/www/database/database.sqlite
 
 # Очищаем кеш
@@ -58,22 +64,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Запускаем PHP-FPM
-echo "Starting PHP-FPM..."
-php-fpm -D
-
-# Проверяем, что PHP-FPM запустился
-sleep 2
-if ! pgrep php-fpm > /dev/null; then
-    echo "ERROR: PHP-FPM failed to start"
-    exit 1
-fi
-
-# Запускаем Nginx
-echo "Starting Nginx..."
 echo "========================================="
-echo "Application started successfully!"
+echo "Initialization completed successfully!"
 echo "========================================="
 
-# Nginx в foreground режиме
-exec nginx -g 'daemon off;'
+# Завершаем скрипт инициализации
+exit 0

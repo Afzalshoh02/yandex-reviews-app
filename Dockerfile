@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libzip-dev \
     zip \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Конфигурация GD
@@ -36,6 +37,9 @@ RUN docker-php-ext-install \
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Создание пользователя для запуска приложения
+RUN useradd -ms /bin/bash appuser || true
+
 # Рабочая директория
 WORKDIR /var/www
 
@@ -43,7 +47,8 @@ WORKDIR /var/www
 COPY . .
 
 # Создание необходимых директорий
-RUN mkdir -p storage/framework/cache/data \
+RUN mkdir -p /run/php \
+    storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \
     storage/logs \
@@ -53,9 +58,11 @@ RUN mkdir -p storage/framework/cache/data \
 # Создание SQLite базы данных
 RUN touch database/database.sqlite
 
-# Установка прав доступа
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 775 storage bootstrap/cache database
+# Установка прав доступа для root (на Render запускается от root)
+RUN chown -R root:root /var/www \
+    && chmod -R 755 /var/www \
+    && chmod -R 775 storage bootstrap/cache database \
+    && chmod 664 database/database.sqlite
 
 # Установка зависимостей PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
@@ -70,8 +77,14 @@ COPY nginx.conf /etc/nginx/sites-available/default
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+# Копирование конфигурации PHP-FPM
+COPY php-fpm.conf /usr/local/etc/php-fpm.d/zz-custom.conf
+
+# Копирование конфигурации supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Открываем порт
 EXPOSE 80
 
-# Запуск приложения
-CMD ["/start.sh"]
+# Запуск через supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
