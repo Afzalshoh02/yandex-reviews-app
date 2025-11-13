@@ -18,28 +18,15 @@ Route::get('/{any}', function () {
     return view('app');
 })->where('any', '.*');
 
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now(),
-        'environment' => app()->environment(),
-    ]);
-});
-Route::get('/debug', function () {
-    try {
-        DB::statement('SELECT 1');
-        $db = 'Database connection: OK';
-    } catch (\Exception $e) {
-        $db = 'Database connection failed: ' . $e->getMessage();
-    }
+
+
+Route::get('/debug-assets', function() {
+    $manifestPath = public_path('build/manifest.json');
 
     return response()->json([
-        'php_version' => PHP_VERSION,
-        'laravel_version' => app()->version(),
-        'environment' => app()->environment(),
-        'debug_mode' => config('app.debug'),
-        'database' => $db,
-        'storage_writable' => is_writable(storage_path()),
-        'bootstrap_writable' => is_writable(base_path('bootstrap/cache')),
+        'manifest_exists' => file_exists($manifestPath),
+        'build_dir_exists' => is_dir(public_path('build')),
+        'assets_in_manifest' => file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : 'No manifest',
+        'files_in_build' => file_exists(public_path('build')) ? array_slice(scandir(public_path('build')), 2) : []
     ]);
 });
