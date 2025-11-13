@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: laravel-vue-app
+    name: yandex-reviews-app
     env: docker
     docker:
       dockerfile: Dockerfile
@@ -11,7 +11,5 @@ services:
         value: false
       - key: APP_KEY
         generateValue: true
-    disk:
-      name: storage
-      mountPath: /var/www/storage
-      sizeGB: 1
+    healthCheckPath: /health
+    autoDeploy: true
