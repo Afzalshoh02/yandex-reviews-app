@@ -35,6 +35,9 @@ COPY . /var/www
 COPY nginx.conf /etc/nginx/sites-available/default
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Создание лог директорий
+RUN mkdir -p /var/log/nginx /var/log/supervisor
+
 # Установка прав
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
@@ -49,15 +52,50 @@ RUN npm install && npm run build
 # Создание базы данных SQLite
 RUN touch /var/www/database/database.sqlite
 
-# Кэширование конфигурации (без миграций и сидов)
+# Кэширование конфигурации
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
 
 EXPOSE 80
 
-# Скрипт запуска, который выполнит миграции при старте контейнера
-COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+# Создание скрипта запуска
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "Starting application..."\n\
+\n\
+# Создание базы данных если не существует\n\
+if [ ! -f /var/www/database/database.sqlite ]; then\n\
+    touch /var/www/database/database.sqlite\n\
+    echo "SQLite database created"\n\
+fi\n\
+\n\
+# Установка правильных прав\n\
+chown -R www-data:www-data /var/www\n\
+chmod -R 755 /var/www/storage\n\
+chmod -R 755 /var/www/bootstrap/cache\n\
+\n\
+# Создание симлинка для storage\n\
+php artisan storage:link\n\
+\n\
+# Применение миграций\n\
+echo "Running migrations..."\n\
+php artisan migrate --force\n\
+\n\
+# Запуск сидов\n\
+echo "Running seeders..."\n\
+php artisan db:seed --force\n\
+\n\
+# Пересоздание кэша после миграций\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+\n\
+echo "Application is ready!"\n\
+\n\
+# Запуск supervisor\n\
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf\n\
+' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
 
 CMD ["/usr/local/bin/start.sh"]

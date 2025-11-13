@@ -1,11 +1,17 @@
 #!/bin/bash
 
-echo "Starting application..."
-
-# Создание базы данных если не существует
-if [ ! -f /var/www/database/database.sqlite ]; then
-    touch /var/www/database/database.sqlite
-    echo "SQLite database created"
+# Проверка существования build директории
+echo "Checking build directory..."
+if [ -d "/var/www/public/build" ]; then
+    echo "Build directory exists"
+    ls -la /var/www/public/build/
+    if [ -d "/var/www/public/build/assets" ]; then
+        echo "Assets directory exists"
+        ls -la /var/www/public/build/assets/
+    fi
+else
+    echo "Build directory does not exist - rebuilding assets"
+    npm run build
 fi
 
 # Установка правильных прав
