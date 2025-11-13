@@ -20,6 +20,21 @@ if ! grep -q "APP_KEY=base64:" .env; then
     php artisan key:generate --force
 fi
 
+# Устанавливаем URL для ассетов
+echo "Setting asset URL..."
+if ! grep -q "ASSET_URL=" .env; then
+    echo "ASSET_URL=https://yandex-reviews-app.onrender.com" >> .env
+fi
+
+if ! grep -q "MIX_ASSET_URL=" .env; then
+    echo "MIX_ASSET_URL=https://yandex-reviews-app.onrender.com" >> .env
+fi
+
+# Принудительно устанавливаем HTTPS
+if ! grep -q "FORCE_HTTPS=" .env; then
+    echo "FORCE_HTTPS=true" >> .env
+fi
+
 # Создаем SQLite базу данных если её нет
 if [ ! -f database/database.sqlite ]; then
     echo "Creating SQLite database..."
@@ -38,6 +53,10 @@ echo "Setting permissions..."
 chmod -R 755 /var/www
 chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/database
 chmod 664 /var/www/database/database.sqlite
+
+# Пересобираем фронтенд с правильным URL
+echo "Rebuilding frontend assets..."
+npm run build
 
 # Очищаем кеш
 echo "Clearing cache..."

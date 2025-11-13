@@ -19,14 +19,6 @@ Route::get('/{any}', function () {
 })->where('any', '.*');
 
 
-
-Route::get('/debug-assets', function() {
-    $manifestPath = public_path('build/manifest.json');
-
-    return response()->json([
-        'manifest_exists' => file_exists($manifestPath),
-        'build_dir_exists' => is_dir(public_path('build')),
-        'assets_in_manifest' => file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : 'No manifest',
-        'files_in_build' => file_exists(public_path('build')) ? array_slice(scandir(public_path('build')), 2) : []
-    ]);
+Route::get('/health', function () {
+    return response('OK', 200);
 });

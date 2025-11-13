@@ -17,6 +17,12 @@ services:
         value: false
       - key: APP_URL
         value: https://yandex-reviews-app.onrender.com
+      - key: ASSET_URL
+        value: https://yandex-reviews-app.onrender.com
+      - key: MIX_ASSET_URL
+        value: https://yandex-reviews-app.onrender.com
+      - key: FORCE_HTTPS
+        value: true
       - key: LOG_CHANNEL
         value: stderr
       - key: LOG_LEVEL
